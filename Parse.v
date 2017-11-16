@@ -1,4 +1,3 @@
-
 Require Import Coq.Bool.Bool.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
@@ -19,10 +18,7 @@ Definition nonterminal (s : symbol) : bool :=
   end.
 
 Definition terminal (s : symbol) : bool :=
-  match s with
-  | T _ => true
-  | _ => false
-  end.
+  negb (nonterminal s).
 
 Definition dummy (s : symbol) : bool :=
   match s with
@@ -48,8 +44,8 @@ Check N "s".
  * S -> aSa | a *)
 Definition simple_grammar : Grammar :=
   G [
-      (N "S") --> [T "a" ; N "S" ; T "a"] ;
-        ((N "S") --> [T "a"])
+      N "S" --> [T "a" ; N "S" ; T "a"] ;
+        N "S" --> [T "a"]
     ].
 
 Check simple_grammar.
@@ -71,3 +67,6 @@ Inductive Tree : Type :=
 (* This is the derivation tree for the smallest string in the
  * language `simple_grammar`, a. *)
 Check Node (N "S") (Leaf (T "a") :: nil).
+
+(* Exercise : check that the lhs of every rule in the grammar is a nonterminal symbol. *)
+Fixpoint valid_grammar (g : Grammar) : bool := false.
