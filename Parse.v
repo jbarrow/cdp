@@ -36,11 +36,20 @@ Inductive Rule : Type :=
 Inductive Grammar : Type :=
   | G : list Rule -> Grammar.
 
-(* S -> aSa | a *)
+Notation "'N' a" := (N (Id a)) (at level 60).
+Notation "'T' a" := (T (Id a)) (at level 60).
+Notation "'D' a" := (D (Id a)) (at level 60).
+
+Notation "a '-->' b" := (R a b) (at level 80).
+
+Check N "s".
+
+(* Starting with a simple grammar of { a^n | n % 2 == 1 }.
+ * S -> aSa | a *)
 Definition simple_grammar : Grammar :=
   G (
-      (R (N (Id "S")) (T (Id "a") :: N (Id "S") :: T (Id "a") ::  nil)) 
-        :: (R (N (Id "S")) (T (Id "a") :: nil))
+      ((N "S") --> (T "a" :: N "S" :: T "a" ::  nil)) 
+        :: ((N "S") --> (T "a" :: nil))
         :: nil
     ).
 
@@ -60,4 +69,6 @@ Inductive Tree : Type :=
   | Leaf : symbol -> Tree
   | Node : symbol -> list Tree -> Tree.
 
-Check Node (N (Id "S")) (Leaf (T (Id "a")) :: nil).
+(* This is the derivation tree for the smallest string in the
+ * language `simple_grammar`, a. *)
+Check Node (N "S") (Leaf (T "a") :: nil).
