@@ -47,11 +47,10 @@ Check N "s".
 (* Starting with a simple grammar of { a^n | n % 2 == 1 }.
  * S -> aSa | a *)
 Definition simple_grammar : Grammar :=
-  G (
-      ((N "S") --> (T "a" :: N "S" :: T "a" ::  nil)) 
-        :: ((N "S") --> (T "a" :: nil))
-        :: nil
-    ).
+  G [
+      (N "S") --> [T "a" ; N "S" ; T "a"] ;
+        ((N "S") --> [T "a"])
+    ].
 
 Check simple_grammar.
 
