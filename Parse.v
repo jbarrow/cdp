@@ -1,3 +1,4 @@
+
 Require Import Coq.Bool.Bool.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
@@ -42,11 +43,11 @@ Check N "s".
 
 (* Starting with a simple grammar of { a^n | n % 2 == 1 }.
  * S -> aSa | a *)
-Definition simple_grammar : Grammar :=
-  G [
-      N "S" --> [T "a" ; N "S" ; T "a"] ;
-        N "S" --> [T "a"]
-    ].
+Definition simple_grammar : list Rule :=
+  [
+    N "S" --> [T "a" ; N "S" ; T "a"] ;
+      N "S" --> [T "a"]
+  ].
 
 Check simple_grammar.
 
@@ -69,4 +70,11 @@ Inductive Tree : Type :=
 Check Node (N "S") (Leaf (T "a") :: nil).
 
 (* Exercise : check that the lhs of every rule in the grammar is a nonterminal symbol. *)
-Fixpoint valid_grammar (g : Grammar) : bool := false.
+Fixpoint valid_grammar (g : list Rule) : bool :=
+  match g with
+  | h :: t => match (lhs h) with
+                  | N _ => valid_grammar t
+                  | _ => false
+                  end
+  | nil => true
+  end.
