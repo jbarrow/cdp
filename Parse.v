@@ -12,19 +12,19 @@ Inductive symbol : Type :=
   | T : id -> symbol
   | D : id -> symbol.
 
-Definition nonterminal (s : symbol) : bool :=
+Definition nonterminal (s : symbol) : Prop :=
   match s with
-  | T _ => false
-  | _ => true
+  | T _ => False
+  | _ => True
   end.
 
-Definition terminal (s : symbol) : bool :=
-  negb (nonterminal s).
+Definition terminal (s : symbol) : Prop :=
+  ~ (nonterminal s).
 
-Definition dummy (s : symbol) : bool :=
+Definition dummy (s : symbol) : Prop :=
   match s with
-  | D _ => true
-  | _ => false
+  | D _ => True
+  | _ => False
   end.
 
 Inductive Rule : Type :=
@@ -70,15 +70,15 @@ Inductive Tree : Type :=
 Check Node (N "S") (Leaf (T "a") :: nil).
 
 (* Exercise : check that the lhs of every rule in the grammar is a nonterminal symbol. *)
-Fixpoint valid_grammar (g : list Rule) : bool :=
+Fixpoint valid_grammar (g : list Rule) : Prop :=
   match g with
   | h :: t => match (lhs h) with
                   | N _ => valid_grammar t
-                  | _ => false
+                  | _ => False
                   end
-  | nil => true
+  | nil => True
   end.
 
 Lemma valid : forall (l:list Rule) (r:Rule),
-    In r l -> valid_grammar l = true -> nonterminal (lhs r) = true.
-Proof.
+    In r l -> valid_grammar l -> nonterminal (lhs r).
+Proof with eauto.
