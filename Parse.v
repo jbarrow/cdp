@@ -78,3 +78,7 @@ Fixpoint valid_grammar (g : list Rule) : bool :=
                   end
   | nil => true
   end.
+
+Lemma valid : forall (l:list Rule) (r:Rule),
+    In r l -> valid_grammar l = true -> nonterminal (lhs r) = true.
+Proof.
