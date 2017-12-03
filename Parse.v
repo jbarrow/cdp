@@ -69,16 +69,36 @@ Inductive Tree : Type :=
  * language `simple_grammar`, a. *)
 Check Node (N "S") (Leaf (T "a") :: nil).
 
-(* Exercise : check that the lhs of every rule in the grammar is a nonterminal symbol. *)
+Definition valid_rule (r : Rule) : Prop :=
+  nonterminal (lhs r).
+
 Fixpoint valid_grammar (g : list Rule) : Prop :=
   match g with
-  | h :: t => match (lhs h) with
-                  | N _ => valid_grammar t
-                  | _ => False
-                  end
+  | h :: t => match valid_rule h with
+              | True => valid_grammar t
+              end
   | nil => True
   end.
 
+(*
+ * Exercise: Prove the following lemma
+ *
+ *   If the Rule r is in the Grammar l, and l is valid (that is, 
+ *   the left-hand side of every rule in l is a nonterminal), then 
+ *   the left hand side of r is a nonterminal.
+ *)
+Lemma valid_is_mappable : forall (l : list Rule) (r : Rule),
+    valid_grammar (r :: l) -> valid_rule r.
+Proof. intros.  Admitted.
+
+Lemma valid_is_composable : forall (l : list Rule) (r : Rule),
+    valid_grammar (r :: l) -> valid_grammar l.
+Proof. intros. Admitted.
+  
 Lemma valid : forall (l:list Rule) (r:Rule),
-    In r l -> valid_grammar l -> nonterminal (lhs r).
+    In r l -> valid_grammar l -> valid_rule r.
 Proof with eauto.
+  intros. generalize dependent r. 
+Admitted.
+    
+Inductive item : Type := .
