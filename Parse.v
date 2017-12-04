@@ -89,16 +89,30 @@ Fixpoint valid_grammar (g : list Rule) : Prop :=
  *)
 Lemma valid_is_mappable : forall (l : list Rule) (r : Rule),
     valid_grammar (r :: l) -> valid_rule r.
-Proof. intros.  Admitted.
+Proof. intros.
+       Admitted.
 
 Lemma valid_is_composable : forall (l : list Rule) (r : Rule),
     valid_grammar (r :: l) -> valid_grammar l.
-Proof. intros. Admitted.
-  
+Proof. intros. 
+       induction l.
+       -destruct r.
+        +simpl. simpl in H. apply H.
+       -induction a.
+        +simpl. simpl in H. apply H.
+Qed.       
+         
 Lemma valid : forall (l:list Rule) (r:Rule),
     In r l -> valid_grammar l -> valid_rule r.
 Proof with eauto.
-  intros. generalize dependent r. 
+  intros.  generalize dependent r.
+  induction l.
+  -intros. inversion H.
+  -intros.
+   +apply IHl.  induction (a ::l).
+    *inversion H.
+    *admit.
+    * simpl in H. destruct H. admit. apply H.
 Admitted.
-    
+   
 Inductive item : Type := .
