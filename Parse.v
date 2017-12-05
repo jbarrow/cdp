@@ -1,7 +1,7 @@
-
 Require Import Coq.Bool.Bool.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
+Require Import Datatypes.
 Import ListNotations.
 
 Inductive id : Type :=
@@ -61,6 +61,12 @@ Definition rhs (r : Rule) : list symbol :=
   | R _ ys => ys
   end.
 
+Definition start_symbol (g : list Rule) : option symbol :=
+  match g with
+  | h :: _ => Some (lhs h)
+  | nil => None
+  end.
+
 Inductive Tree : Type :=
   | Leaf : symbol -> Tree
   | Node : symbol -> list Tree -> Tree.
@@ -74,9 +80,7 @@ Definition valid_rule (r : Rule) : Prop :=
 
 Fixpoint valid_grammar (g : list Rule) : Prop :=
   match g with
-  | h :: t => match valid_rule h with
-              | True => valid_grammar t
-              end
+  | h :: t => valid_rule h /\ valid_grammar t
   | nil => True
   end.
 
@@ -87,32 +91,38 @@ Fixpoint valid_grammar (g : list Rule) : Prop :=
  *   the left-hand side of every rule in l is a nonterminal), then 
  *   the left hand side of r is a nonterminal.
  *)
-Lemma valid_is_mappable : forall (l : list Rule) (r : Rule),
+Lemma valid_item : forall (l : list Rule) (r : Rule),
     valid_grammar (r :: l) -> valid_rule r.
-Proof. intros.
-       Admitted.
+Proof. intros. induction l; inversion H; apply H0. Qed.
 
-Lemma valid_is_composable : forall (l : list Rule) (r : Rule),
+Lemma valid_composition : forall (l : list Rule) (r : Rule),
     valid_grammar (r :: l) -> valid_grammar l.
-Proof. intros. 
-       induction l.
-       -destruct r.
-        +simpl. simpl in H. apply H.
-       -induction a.
-        +simpl. simpl in H. apply H.
-Qed.       
-         
+Proof. intros. induction l; inversion H; apply H1. Qed.       
+
 Lemma valid : forall (l:list Rule) (r:Rule),
     In r l -> valid_grammar l -> valid_rule r.
 Proof with eauto.
-  intros.  generalize dependent r.
-  induction l.
-  -intros. inversion H.
-  -intros.
-   +apply IHl.  induction (a ::l).
-    *inversion H.
-    *admit.
-    * simpl in H. destruct H. admit. apply H.
-Admitted.
-   
-Inductive item : Type := .
+  intros. induction l; inversion H.
+  - subst. apply valid_item in H0. apply H0.
+  - apply valid_composition in H0. apply IHl...
+Qed.
+
+Inductive item : Type :=
+  | I : nat -> symbol -> list symbol -> list symbol -> nat -> list Tree -> item.
+
+Definition trees (i : item) : list Tree :=
+  match i with
+  | I _ _ _ _ _ t => t
+  end.
+
+Definition axioms (g : list Rule) : option item :=
+  match start_symbol g with
+  | Some s => Some (I 0 (D "S'") [] [s] 0 [])
+  | None => None
+  end.
+
+Definition goal (g : list Rule) (s : list id) (i : item) : Prop :=
+  match i with
+  | I i symbol symbols symbols' k trees => i = 0 /\ dummy symbol /\ symbols' = []
+  end.
+                                                                                 
