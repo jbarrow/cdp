@@ -1,71 +1,10 @@
+Require Import Grammar.
 Require Import Coq.Bool.Bool.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Require Import Datatypes.
+Require Import PeanoNat.
 Import ListNotations.
-
-Inductive id : Type :=
-  | Id : string -> id.
-
-Inductive symbol : Type :=
-  | N : id -> symbol
-  | T : id -> symbol
-  | D : id -> symbol.
-
-Definition nonterminal (s : symbol) : Prop :=
-  match s with
-  | T _ => False
-  | _ => True
-  end.
-
-Definition terminal (s : symbol) : Prop :=
-  ~ (nonterminal s).
-
-Definition dummy (s : symbol) : Prop :=
-  match s with
-  | D _ => True
-  | _ => False
-  end.
-
-Inductive Rule : Type :=
-  | R : symbol -> list symbol -> Rule.
-
-Inductive Grammar : Type :=
-  | G : list Rule -> Grammar.
-
-Notation "'N' a" := (N (Id a)) (at level 60).
-Notation "'T' a" := (T (Id a)) (at level 60).
-Notation "'D' a" := (D (Id a)) (at level 60).
-
-Notation "a '-->' b" := (R a b) (at level 80).
-
-Check N "s".
-
-(* Starting with a simple grammar of { a^n | n % 2 == 1 }.
- * S -> aSa | a *)
-Definition simple_grammar : list Rule :=
-  [
-    N "S" --> [T "a" ; N "S" ; T "a"] ;
-      N "S" --> [T "a"]
-  ].
-
-Check simple_grammar.
-
-Definition lhs (r : Rule) : symbol :=
-  match r with
-  | R x _ => x
-  end.
-
-Definition rhs (r : Rule) : list symbol :=
-  match r with
-  | R _ ys => ys
-  end.
-
-Definition start_symbol (g : list Rule) : option symbol :=
-  match g with
-  | h :: _ => Some (lhs h)
-  | nil => None
-  end.
 
 Inductive Tree : Type :=
   | Leaf : symbol -> Tree
@@ -75,37 +14,6 @@ Inductive Tree : Type :=
  * language `simple_grammar`, a. *)
 Check Node (N "S") (Leaf (T "a") :: nil).
 
-Definition valid_rule (r : Rule) : Prop :=
-  nonterminal (lhs r).
-
-Fixpoint valid_grammar (g : list Rule) : Prop :=
-  match g with
-  | h :: t => valid_rule h /\ valid_grammar t
-  | nil => True
-  end.
-
-(*
- * Exercise: Prove the following lemma
- *
- *   If the Rule r is in the Grammar l, and l is valid (that is, 
- *   the left-hand side of every rule in l is a nonterminal), then 
- *   the left hand side of r is a nonterminal.
- *)
-Lemma valid_item : forall (l : list Rule) (r : Rule),
-    valid_grammar (r :: l) -> valid_rule r.
-Proof. intros. induction l; inversion H; apply H0. Qed.
-
-Lemma valid_composition : forall (l : list Rule) (r : Rule),
-    valid_grammar (r :: l) -> valid_grammar l.
-Proof. intros. induction l; inversion H; apply H1. Qed.       
-
-Lemma valid : forall (l:list Rule) (r:Rule),
-    In r l -> valid_grammar l -> valid_rule r.
-Proof with eauto.
-  intros. induction l; inversion H.
-  - subst. apply valid_item in H0. apply H0.
-  - apply valid_composition in H0. apply IHl...
-Qed.
 
 Inductive item : Type :=
   | I : nat -> symbol -> list symbol -> list symbol -> nat -> list Tree -> item.
@@ -131,6 +39,9 @@ Definition goal (g : list Rule) (s : list id) (i : item) : Prop :=
   | I i symbol symbols symbols' k trees => i = 0 /\ dummy symbol /\ symbols' = []
   end.
 
+Definition beq_s_r (s : symbol) (r : Rule) :=
+  beq_symbol s (lhs r).
+
 (* The `scan` rule for our Earley parser has the form:
  * 
  *   i, A → α • wjβ, j
@@ -140,7 +51,14 @@ Definition goal (g : list Rule) (s : list id) (i : item) : Prop :=
 Definition scan (tokens : list id) (trigger : item) : list item :=
   match trigger with
   | I i a alpha [] j ts => []
-  | I i a alpha (symbol :: b) j ts => []
+  | I i a alpha (symbol :: b) j ts =>
+    if (Nat.ltb (Datatypes.length tokens) j)
+    then []
+    else (
+        if beq_symbol symbol (Terminal (nth j tokens (Id "")))
+        then [I i a (alpha ++ [symbol]) b (j+1) (ts ++ [Leaf (Terminal (nth j tokens (Id "")))])]
+        else []
+      )
   end.
 
 (* The `predict` rule for our Earley parser has the form:
@@ -150,10 +68,16 @@ Definition scan (tokens : list id) (trigger : item) : list item :=
  * j, B → •γ, j
  *
  *)
+Definition predict_item (j : nat) (r : Rule) : item :=
+  match r with
+  | R b gamma => I j b [] gamma j []
+  end.
+  
 Definition predict (g : list Rule) (trigger : item) : list item :=
   match trigger with
   | I i a alpha [] j ts => []
-  | I i a alpha (symbol :: b) j ts => []
+  | I i a alpha (symbol :: b) j ts =>
+    map (predict_item j) (filter (beq_s_r symbol) g)
   end.
 
 (* The `complete` rule for our Earley parser has the form:
@@ -165,6 +89,7 @@ Definition predict (g : list Rule) (trigger : item) : list item :=
 Definition complete (trigger : item) (stored : list item) : list item :=
   match trigger with
   | I i a alpha ((N x) :: b) k ts => []
+  | I k (N x) gamma [] j ts => []
   | _ => []
   end.
 
@@ -175,4 +100,15 @@ Definition consequences
 
 Definition initial_store (g : list Rule) : (list item * list item) :=
   ([], axioms g).
+
+Fixpoint exhaust_agenda (g : list Rule) (tokens : list id) (store : list item * list item) : (list item * list item) :=
+  match store with
+  | (chart, []) => (chart, [])
+  | (chart, trigger :: rest) =>
+    exhaust_agenda g tokens
+                   (
+                     chart ++ [trigger],
+                     rest ++ (consequences g tokens trigger chart)
+                   )
+  end.
 
