@@ -11,18 +11,14 @@ Definition grammar : Grammar :=
   G [(N "S") --> [(T "a") ; (N "S") ; (T "a")] ; (N "S") --> [T "a"]].
 ```
 
+To compile the grammar, run:
+
+```
+coqc Grammar.v
+```
+
+This is required in order to run the Parse.v file.
+
 ## Parsing
 
 TODO
-
-## Proofs
-
-We aim to prove two properties of the parser, completeness and soundness.
-
-### Completeness
-
-...
-
-### Soundness
-
-...
